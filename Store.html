@@ -1,0 +1,153 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>STORE OF STORIES</title>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      margin: 20px;
+      background-color: #f5f5f5;
+    }
+
+    .select {
+      margin-bottom: 30px;
+    }
+
+    select {
+      padding: 10px;
+      font-size: 16px;
+    }
+
+    .posts {
+      background-color: #ffffff;
+      padding: 20px;
+      border-radius: 10px;
+    }
+
+    .post {
+      margin-bottom: 20px;
+      padding: 15px;
+      border-left: 5px solid #007bff;
+      background-color: #f0f8ff;
+      border-radius: 8px;
+    }
+
+    .post h3 {
+      margin-top: 0;
+      color: #007bff;
+    }
+
+    .post p {
+      white-space: pre-wrap;
+    }
+
+    button {
+      background-color: #007bff;
+      color: white;
+      padding: 8px 12px;
+      border: none;
+      border-radius: 5px;
+      cursor: pointer;
+    }
+
+    button:hover {
+      background-color: #0056b3;
+    }
+  </style>
+</head>
+<body>
+  <div class="select">
+    <h2>SELECT A STORY</h2>
+    <select name="story" id="story">
+      <option disabled selected>Loading stories...</option>
+    </select>
+  </div>
+
+  <div class="posts">
+    <h2>Posts</h2>
+    <!-- Episodes will be inserted here -->
+  </div>
+
+  <script type="module">
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/10.11.1/firebase-app.js";
+    import { getFirestore, collection, getDocs, doc, getDoc } from "https://www.gstatic.com/firebasejs/10.11.1/firebase-firestore.js";
+
+    const firebaseConfig = {
+      apiKey: "AIzaSyAvwNyhKiKFyI-r6MDDk7BH3iq7P61z594",
+      authDomain: "newtalents-a7c29.firebaseapp.com",
+      projectId: "newtalents-a7c29",
+      storageBucket: "newtalents-a7c29.appspot.com",
+      messagingSenderId: "507408992610",
+      appId: "1:507408992610:web:05ce220a4cb4922de9843b"
+    };
+
+    const app = initializeApp(firebaseConfig);
+    const db = getFirestore(app);
+
+    const storySelect = document.getElementById("story");
+    const postsDiv = document.querySelector(".posts");
+
+    // Load stories
+    async function loadStories() {
+      const querySnapshot = await getDocs(collection(db, "stories"));
+      storySelect.innerHTML = `<option disabled selected>-- Select a story --</option>`;
+      querySnapshot.forEach((docSnap) => {
+        const story = docSnap.data();
+        const option = document.createElement("option");
+        option.value = docSnap.id;
+        option.textContent = story.title || docSnap.id;
+        storySelect.appendChild(option);
+      });
+    }
+
+    // Load episodes
+    async function loadEpisodes(storyId) {
+      const docRef = doc(db, "stories", storyId);
+      const docSnap = await getDoc(docRef);
+      postsDiv.innerHTML = `<h2>Posts</h2>`; // Clear old posts
+
+      if (docSnap.exists()) {
+        const data = docSnap.data();
+        const episodes = data.episodes || [];
+
+        episodes.forEach((ep, index) => {
+          const post = document.createElement("div");
+          post.className = "post";
+
+          post.innerHTML = `
+            <h3>Episode ${index + 1}</h3>
+            <p>${ep.replace(/\n/g, "<br>")}</p>
+            <button class="copy-btn" data-ep="${encodeURIComponent(ep)}">Copy</button>
+          `;
+
+          postsDiv.appendChild(post);
+        });
+      } else {
+        postsDiv.innerHTML += "<p>No episodes found for this story.</p>";
+      }
+    }
+
+    // Event listener for all Copy buttons
+    document.addEventListener("click", (e) => {
+      if (e.target.classList.contains("copy-btn")) {
+        const raw = decodeURIComponent(e.target.dataset.ep);
+        navigator.clipboard.writeText(raw).then(() => {
+          alert("Copied!");
+        }).catch((err) => {
+          alert("Failed to copy: " + err);
+        });
+      }
+    });
+
+    // When story is selected
+    storySelect.addEventListener("change", (e) => {
+      const selectedStoryId = e.target.value;
+      loadEpisodes(selectedStoryId);
+    });
+
+    loadStories();
+  </script>
+</body>
+</html>
