@@ -1,0 +1,237 @@
+<!DOCTYPE html>
+<html lang="rw">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Isuzuma ry'Inkuru</title>
+</head>
+<body>
+ <style>
+   body{
+     margin: 0;
+    padding: 0;
+   }
+   .analysis{
+     display: flex;
+     padding: 12px;
+     flex-direction: column;
+     background: #7A7FBA;
+     margin: 30px;
+     align-items: center;
+     border-radius: 12px;
+     box-shadow: 2px 2px 2px 2px darkgreen;
+    
+   }
+   #documentSelect{
+     width: 160px;
+     height: 30px;
+     margin-bottom: 10px;
+     border-radius: 12px;
+   }
+   button{
+     width: 78px;
+     height: 25px;
+     border-radius: 6px;
+     background: blue;
+     color: white;
+     font-weight: bold;
+     border: none;
+   }
+   button:hover{
+     background: darkslategrey;
+     border: none;
+   }
+   #result{
+     margin: 15px;
+     padding: 10px;
+     border: 1px solid grey;
+   }
+   p strong{
+     color: lightseagreen;
+   }
+ </style>
+ <div class="analysis">
+    <h1>Isuzuma ry'Inkuru</h1>
+    <label for="documentSelect">Hitamo Inkuru:</label>
+    <select id="documentSelect"></select>
+    <button onclick="loadAndAnalyzeDocument()">Analysis</button>
+ </div>
+    <div id="result">
+      
+      <span id="bad"></span>
+    </div>
+
+    <script type="module">
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/10.14.1/firebase-app.js";
+        import { getFirestore, collection, getDocs, doc, getDoc } from "https://www.gstatic.com/firebasejs/10.14.1/firebase-firestore.js";
+
+        // Firebase configuration
+        const firebaseConfig = {
+            apiKey: "AIzaSyAvwNyhKiKFyI-r6MDDk7BH3iq7P61z594",
+            authDomain: "newtalents-a7c29.firebaseapp.com",
+            projectId: "newtalents-a7c29",
+            storageBucket: "newtalents-a7c29.appspot.com",
+            messagingSenderId: "507408992610",
+            appId: "1:507408992610:web:05ce220a4cb4922de9843b"
+        };
+
+        // Initialize Firebase
+        const app = initializeApp(firebaseConfig);
+        const db = getFirestore(app);
+
+        // Function yo kuzuza dropdown na documents
+        async function loadDocuments() {
+            try {
+                const querySnapshot = await getDocs(collection(db, "stories"));
+                const documentSelect = document.getElementById("documentSelect");
+                documentSelect.innerHTML = "<option disabled selected>-- Hitamo Inkuru --</option>";
+
+                querySnapshot.forEach((doc) => {
+                    const option = document.createElement("option");
+                    option.value = doc.id;
+                    option.textContent = doc.data().storyName || doc.id; // Niba storyName iboneka
+                    documentSelect.appendChild(option);
+                });
+
+            } catch (error) {
+                console.error("Ikosa mu gutoranya documents:", error);
+                alert("Habaye ikosa mu kubona documents.");
+            }
+        }
+
+        // Function yo gusoma document & gukora analysis
+        window.loadAndAnalyzeDocument = async function () {
+            const documentSelect = document.getElementById("documentSelect");
+            const selectedDocument = documentSelect.value;
+
+            if (!selectedDocument) {
+                alert("Nyamuneka hitamo inkuru ubanze.");
+                return;
+            }
+
+            try {
+                const docRef = doc(db, "stories", selectedDocument);
+                const docSnap = await getDoc(docRef);
+
+                if (docSnap.exists()) {
+                    const data = docSnap.data();
+                    if (!data.episodes || !Array.isArray(data.episodes)) {
+                        alert("Nta episodes ziboneka muri iyi document.");
+                        return;
+                    }
+
+                    analyzeEpisodes(data);
+                } else {
+                    alert("Inkuru ntiyabonetse. Gerageza indi.");
+                }
+            } catch (error) {
+                console.error("Ikosa mu gusoma document:", error);
+                alert("Habaye ikosa mu gusoma inkuru.");
+            }
+        };
+
+ function analyzeEpisodes(data) {
+let totalWords = 0;
+let validArrays = 0;
+let inappropriateCount = 0;
+let insultCount = 0;
+let explicitCount = 0;
+
+// Amagambo mabi  
+const inappropriateWords = ["gaswere", "nyoko", "Igicucu","gaswere nyoko", "gapfe nabi", "kicwe n'imiruho"];  
+const insults = ["gucumita", "wa mugaye", "gaswere"];  
+const explicitWords = ["guswera", "igituba", "imboro", "dick", "vagina", "imishino","kunyaza", "kunnyaza", "gusohora", "gushyukwa"];  
+
+// Genzura niba episodes zihari  
+if (!data.episodes || !Array.isArray(data.episodes)) {  
+    console.error("❌ Ikosa: `episodes` ntabwo iriho cyangwa ntabwo ari array!");  
+    alert("❌ Ikosa: Ntibashoboye kubona episodes muri iyi document.");  
+    return;  
+}  
+
+console.log("🔍 Episodes zibashije kuboneka:", data.episodes.length);  
+
+data.episodes.forEach((episode, index) => {  
+    let text = JSON.stringify(episode); // Hindura episode yose mu text  
+
+    // Kubara amagambo yose mbere yo kuyakuramo  
+    let words = text.split(/\s+/).filter(word => word.length > 0);  
+
+    // Kubika umubare w'amagambo mbere yo kuyakuramo  
+    let originalWordCount = words.length;  
+
+    // Gusuzuma amagambo mabi no kuyakuramo  
+    words = words.filter(word =>   
+        !inappropriateWords.includes(word) &&   
+        !insults.includes(word) &&   
+        !explicitWords.includes(word)  
+    );  
+
+    // Umubare w'amagambo usigaye  
+    totalWords += words.length;  
+    validArrays++;  
+
+    // Kubara amagambo mabi yasanzwemo  
+    inappropriateWords.forEach(word => {  
+        if (text.includes(word)) inappropriateCount++;  
+    });  
+
+    insults.forEach(word => {  
+        if (text.includes(word)) insultCount++;  
+    });  
+
+    explicitWords.forEach(word => {  
+        if (text.includes(word)) explicitCount++;  
+    });  
+
+    // Kwerekana episode imwe muri console  
+    if (index === 0) console.log("✅ Episode 1 Data:", text.substring(0, 100) + "...");  
+});  
+
+// Genzura niba hari data yakusanyijwe  
+if (validArrays === 0) {  
+    console.error("❌ Ikosa: Nta kintu cyabonetse muri array.");  
+    alert("❌ Ikosa: Nta kintu cyabonetse muri array.");  
+    return;  
+}  
+
+const averageWords = validArrays > 0 ? (totalWords / validArrays).toFixed(2) : 0;  
+const totalPrice = averageWords * 3.4;  
+const wordCheck = (averageWords >= 500 && averageWords <= 800) ? "Bibi cyane" :
+                  (averageWords >= 801 && averageWords <= 1000) ? "Bibi" :
+                  (averageWords >= 1001 && averageWords <= 1400) ? "Ibisanzwe" :
+                  (averageWords >= 1401 && averageWords <= 1700) ? "Byiza" :
+                  (averageWords >= 1701 && averageWords <= 2000) ? "Byiza cyane" :
+                  "Igitangaza";
+
+console.log("🔵 Total words (nyuma yo gukuramo amagambo mabi):", totalWords);  
+console.log("🔵 Average words:", averageWords);  
+
+document.getElementById("result").innerHTML = `  
+    <h3>Inkuru yasesenguwe: ${validArrays} / ${data.episodes.length} episodes</h3>  
+    <p><strong>Amazina y'umwanditsi:</strong> ${data.authorName || "Ntaboneka"}</p>  
+    <p><strong>Momo Number:</strong> ${data.momoNumber || "Ntaboneka"}</p>  
+    <p><strong>Phone Number:</strong> ${data.phoneNumber || "Ntaboneka"}</p>  
+    <p><strong>Number of Episodes:</strong> ${data.episodes.length}</p>  
+    <p><strong>Story Name:</strong> ${data.storyName || "Ntaboneka"}</p>  
+    <p><strong>Whatsapp Number:</strong> ${data.whatsappNumber || "Ntaboneka"}</p>  
+    <hr>  
+    <p><strong>Umubare w'amagambo yose (Nyuma yo gukuramo amagambo mabi):</strong> ${totalWords}</p>  
+    <p><strong>Average y'amagambo kuri episode:</strong> ${averageWords}</p>  
+    <p><strong>Agaciro k'inkuru yose:</strong> ${totalPrice.toFixed(2)} RWF</p>  
+    <p><strong>Isesengura ry'amagambo:</strong> ${wordCheck}</p>  
+    <hr>  
+    <p><strong>Amagambo y'urukozasoni abonekamo:</strong> ${inappropriateCount}</p>  
+    <p><strong>Ibitutsi bibonekamo:</strong> ${insultCount}</p>  
+    <p><strong>Ubusambanyi bubonekamo:</strong> ${explicitCount}</p>  
+`;
+
+}
+
+
+
+        // Kuzamura documents iyo page ifunguwe
+        window.onload = loadDocuments;
+    </script>
+</body>
+</html>
