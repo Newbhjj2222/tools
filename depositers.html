@@ -1,0 +1,242 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.4/css/all.min.css" integrity="sha512-1ycn6IcaQQ40/MKBW2W4Rhis/DbILU74C1vSrLJxCq57o941Ym01SwNsOMqvEBFlcgUa6xLiPY/NS5R+E6ztJQ==" crossorigin="anonymous" referrerpolicy="no-referrer" />
+    <link href="https://fonts.googleapis.com/css2?family=Candal&family=Lora:ital,wght@0,400;1,400;1,700&display=swap" rel="stylesheet">
+    <title>Management of NES</title>
+    <style>
+        body {
+            margin: 0;
+            padding: 0;
+            font-family: Arial, sans-serif;
+            overflow: hidden;
+        }
+        table {
+            max-width: 100%;
+            width: auto;
+            margin: 10px;
+            font-size: 12px;
+            overflow: hidden;
+            border-collapse: collapse;
+        }
+        th, td {
+            border: 1px solid black;
+            padding: 8px;
+            text-align: left;
+        }
+        th {
+            background: green;
+            color: white;
+        }
+        button {
+            background: blue;
+            color: white;
+            border: none;
+            padding: 5px 10px;
+            cursor: pointer;
+        }
+        button:hover {
+            background: darkblue;
+        }
+        
+        .giver {
+            display: flex;
+            padding: 12px;
+            flex-direction: column;
+            background: #7A7FBA;
+            margin: 20px;
+            align-items: center;
+            border-radius: 12px;
+            box-shadow: 2px 2px 2px 2px darkgreen;
+        }
+        #documentSelect {
+            width: 160px;
+            height: 30px;
+            margin-bottom: 10px;
+            border-radius: 12px;
+        }
+        td{
+          width: 20px;
+       
+        }
+        img{
+          width: 85%;
+          margin: 30px;
+          height: 340px;
+          border-radius: 15px;
+        }
+        
+        @media screen and (max-width: 768px) {
+    table {
+        font-size: 10px;
+    }
+    th, td {
+        padding: 5px;
+    }
+  
+    
+    
+}
+
+@media screen and (max-width: 480px) {
+    table {
+        display: block;
+        overflow-x: auto;
+        white-space: nowrap;
+    }
+    th, td {
+        padding: 4px;
+    }
+    h1 {
+        font-size: 16px;
+    }
+    
+}
+    </style>
+</head>
+<body>
+    <div class="giver">
+        <h1>management of NES</h1>
+        <h1>Depositors</h1>
+        <label for="documentSelect">Hitamo User:</label>
+        <select id="documentSelect"></select>
+        <button onclick="loadDocument()">Show</button>
+    </div>
+
+    <table>
+        <tr>
+            <th>Username</th>
+            <th>Phone</th>
+            <th>Momo Name</th>
+            <th>Plan</th>
+            <th>NES</th>
+            <th>Time</th>
+            <th>Action</th>
+        </tr>
+        <tr>
+            <td id="username"></td>
+            <td id="phone-number"></td>
+            <td id="momo-name"></td>
+            <td id="plan"></td>
+            <td id="nes"></td>
+            <td id="time"></td>
+            <td><button type="button" id="update-nes" onclick="updateNES()">update NeS</button></td>
+        </tr>
+    </table>
+    <span><img src="Screenshot_20250208-235645_1.png" alt=""></span>
+
+    <script type="module">
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/10.14.1/firebase-app.js";
+        import { getFirestore, collection, getDocs, doc, getDoc, updateDoc } from "https://www.gstatic.com/firebasejs/10.14.1/firebase-firestore.js";
+
+        // Firebase configuration
+        const firebaseConfig = {
+            apiKey: "AIzaSyAvwNyhKiKFyI-r6MDDk7BH3iq7P61z594",
+            authDomain: "newtalents-a7c29.firebaseapp.com",
+            projectId: "newtalents-a7c29",
+            storageBucket: "newtalents-a7c29.appspot.com",
+            messagingSenderId: "507408992610",
+            appId: "1:507408992610:web:05ce220a4cb4922de9843b"
+        };
+
+        // Initialize Firebase
+        const app = initializeApp(firebaseConfig);
+        const db = getFirestore(app);
+
+        // Function to fetch all depositers and populate the select dropdown
+        async function loadDepositors() {
+            const select = document.getElementById("documentSelect");
+            select.innerHTML = ""; // Gusiba ibyo byari birimo mbere
+
+            try {
+                const querySnapshot = await getDocs(collection(db, "depositers"));
+                querySnapshot.forEach((doc) => {
+                    let option = document.createElement("option");
+                    option.value = doc.id;
+                    option.textContent = doc.id;
+                    select.appendChild(option);
+                });
+            } catch (error) {
+                console.error("Error fetching depositers:", error);
+            }
+        }
+
+// Function to load selected document data into the table
+async function loadDocument() {
+    const docId = document.getElementById("documentSelect").value;
+
+    if (!docId) {
+        alert("Please select a document.");
+        return;
+    }
+
+    try {
+        const docRef = doc(db, "depositers", docId);
+        const docSnap = await getDoc(docRef);
+
+        if (docSnap.exists()) {
+            const data = docSnap.data();
+            
+            // Kwandika amakuru mu bice bya HTML
+            document.getElementById("username").textContent = data.username || "N/A";
+            document.getElementById("phone-number").textContent = data.phone_number || "N/A";
+            document.getElementById("momo-name").textContent = data.momo_name || "N/A";
+            document.getElementById("plan").textContent = data.plan || "N/A";
+            document.getElementById("nes").textContent = data.nes || "N/A";
+            
+            // Gufata timestamp neza
+            if (data.timestamp) {
+                const date = data.timestamp.toDate(); // Guhindura Firestore Timestamp muri Date
+                document.getElementById("time").textContent = date.toLocaleDateString('en-GB', {
+                    day: '2-digit', month: 'long'
+                });
+            } else {
+                document.getElementById("time").textContent = "N/A";
+            }
+            
+        } else {
+            alert("Document not found!");
+        }
+    } catch (error) {
+        console.error("Error fetching document:", error);
+        alert("An error occurred while fetching the document.");
+    }
+}
+
+        // Function yo kuvugurura NES
+        async function updateNES() {
+            const docId = document.getElementById("documentSelect").value;
+
+            if (!docId) {
+                alert("Please select a document first.");
+                return;
+            }
+
+            const newNES = prompt("Shyiramo agaciro gashya ka NES:");
+
+            if (newNES !== null && newNES.trim() !== "") {
+                try {
+                    const docRef = doc(db, "depositers", docId);
+                    await updateDoc(docRef, {
+                        nes: newNES
+                    });
+
+                    // Kuvugurura mu nyandiko
+                    document.getElementById("nes").textContent = newNES;
+                    alert("NES yavuguruwe neza!");
+                } catch (error) {
+                    console.error("Error updating NES:", error);
+                    alert("Habaye ikosa mu kuvugurura NES.");
+                }
+            }
+        }
+
+        // Function yo kwemeza ko izi functions zishobora gukoreshwa muri HTML
+        window.onload = loadDepositors;
+        window.loadDocument = loadDocument;
+        window.updateNES = updateNES;
+    </script>
+</body>
+</html>
