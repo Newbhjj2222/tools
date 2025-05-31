@@ -1,0 +1,127 @@
+<!DOCTYPE html>
+<html lang="rw">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Ohereza Content</title>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      background-color: #f2f2f2;
+      padding: 40px;
+    }
+
+    .form-container {
+      background-color: #fff;
+      max-width: 600px;
+      margin: auto;
+      padding: 30px;
+      border-radius: 10px;
+      box-shadow: 0 4px 8px rgba(0,0,0,0.1);
+    }
+
+    h2 {
+      text-align: center;
+      margin-bottom: 20px;
+      color: #333;
+    }
+
+    label {
+      display: block;
+      margin-bottom: 8px;
+      font-weight: bold;
+      color: #555;
+    }
+
+    textarea, input[type="url"] {
+      width: 100%;
+      padding: 10px;
+      margin-bottom: 20px;
+      border: 1px solid #ccc;
+      border-radius: 6px;
+      font-size: 16px;
+    }
+
+    button {
+      width: 100%;
+      padding: 12px;
+      background-color: #0099cc;
+      color: white;
+      border: none;
+      border-radius: 6px;
+      font-size: 16px;
+      cursor: pointer;
+    }
+
+    button:hover {
+      background-color: #0077aa;
+    }
+  </style>
+</head>
+<body>
+
+  <div class="form-container">
+    <h2>Ohereza Content na Video</h2>
+    <form action="#" method="post">
+      <label for="content">Andika content yawe:</label>
+      <textarea id="content" name="content" rows="6" placeholder="Andika inkuru cyangwa ibisobanuro..."></textarea>
+
+      <label for="videoUrl">Shyiramo video URL (YouTube cyangwa indi):</label>
+      <input type="url" id="videoUrl" name="videoUrl" placeholder="https://example.com/video">
+
+      <button type="submit">Ohereza</button>
+    </form>
+  </div>
+
+
+  <script type="module">
+  import { initializeApp } from "https://www.gstatic.com/firebasejs/10.14.1/firebase-app.js";
+  import { getAuth } from "https://www.gstatic.com/firebasejs/10.14.1/firebase-auth.js";
+  import { getFirestore, collection, getDocs,addDoc,query, orderBy } from "https://www.gstatic.com/firebasejs/10.14.1/firebase-firestore.js";
+  import { getStorage, ref, getDownloadURL } from "https://www.gstatic.com/firebasejs/10.14.1/firebase-storage.js";
+
+  const firebaseConfig = {
+      apiKey: "AIzaSy...",
+      authDomain: "newtalents-a7c29.firebaseapp.com",
+      projectId: "newtalents-a7c29",
+      storageBucket: "newtalents-a7c29.appspot.com",
+      messagingSenderId: "507408992610",
+      appId: "1:507408992610:web:05ce220a4cb4922de9843b"
+  };
+
+  const app = initializeApp(firebaseConfig);
+  const db = getFirestore(app);
+  const storage = getStorage(app);
+
+
+  // 3. Fungura form
+  document.addEventListener("DOMContentLoaded", () => {
+    const form = document.querySelector("form");
+    form.addEventListener("submit", async (e) => {
+      e.preventDefault();
+
+      // Fata ibyo winjije
+      const content = document.getElementById("content").value;
+      const videoUrl = document.getElementById("videoUrl").value;
+
+      try {
+        // 4. Andika mu collection ya "shows"
+        await addDoc(collection(db, "shows"), {
+          content: content,
+          videoUrl: videoUrl,
+          createdAt: new Date()
+        });
+
+        alert("Byoherejwe neza!");
+        form.reset();
+      } catch (error) {
+        console.error("Kwibika byanze: ", error);
+        alert("Habaye ikosa mu kohereza.");
+      }
+    });
+  });
+</script>
+
+
+</body>
+</html>
