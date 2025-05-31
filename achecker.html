@@ -1,0 +1,185 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Filtering Stories</title>
+  <style>
+    #status {
+      font-size: 18px;
+      font-weight: bold;
+      margin: 10px 0;
+      color: #333;
+    }
+    .blocked-story {
+      border: 1px solid #ccc;
+      padding: 10px;
+      margin: 5px 0;
+      border-radius: 5px;
+    }
+    .buttons {
+      margin-top: 10px;
+    }
+    .btn {
+      padding: 5px 10px;
+      margin-right: 5px;
+      border: none;
+      cursor: pointer;
+      font-size: 14px;
+      border-radius: 5px;
+    }
+    .hide-btn {
+      background-color: orange;
+      color: white;
+    }
+    .delete-btn {
+      background-color: red;
+      color: white;
+    }
+  </style>
+</head>
+
+<body>
+
+  <div id="status">🕓 Loading...</div>
+  <div id="blockedStories"></div>
+
+<script type="module">
+  import { initializeApp } from "https://www.gstatic.com/firebasejs/10.14.1/firebase-app.js";
+  import { getFirestore, collection, getDocs, doc, updateDoc, deleteDoc } from "https://www.gstatic.com/firebasejs/10.14.1/firebase-firestore.js";
+  
+  // Firebase configuration
+  const firebaseConfig = {
+    apiKey: "AIzaSyAvwNyhKiKFyI-r6MDDk7BH3iq7P61z594",
+    authDomain: "newtalents-a7c29.firebaseapp.com",
+    projectId: "newtalents-a7c29",
+    storageBucket: "newtalents-a7c29.appspot.com",
+    messagingSenderId: "507408992610",
+    appId: "1:507408992610:web:05ce220a4cb4922de9843b"
+  };
+  
+  // Initialize Firebase
+  const app = initializeApp(firebaseConfig);
+  const db = getFirestore(app);
+  
+  async function checkAndFilterStories() {
+  const status = document.getElementById("status");
+  const container = document.getElementById("blockedStories");
+  
+  try {
+    status.innerText = "🔎 Turimo gusuzuma inkuru...";
+    container.innerHTML = "";
+    
+    const postsRef = collection(db, "posts");
+    const snapshot = await getDocs(postsRef);
+    console.log("Snapshot Docs:", snapshot.docs); // Genzura snapshot
+    const blockedStories = [];
+    
+    const badWords = [
+  "igituba", "imishino", "imboro", "guswera", "kunyaza", "konka igitsina",
+  "kujomba urutoki mu gitsina",
+  "gucumita", "rugongo", "kunyonga", "umushino", "guswebwa",  "gukuna"
+];
+    
+    for (const docSnap of snapshot.docs) {
+      const data = docSnap.data();
+      console.log("Document Data:", data); // Genzura data
+      
+      if (!data) {
+        console.error(`Error: Data ya document id ${docSnap.id} ntiyabonetse.`);
+        continue;
+      }
+      
+      const { story, author, head } = data;
+      
+      if (!story || typeof story !== "string") {
+        console.error("Error: 'story' si inyandiko.");
+        continue;
+      }
+      
+      const docRef = doc(db, "posts", docSnap.id);
+      let reason = "";
+      
+      // Genzura amagambo mabi
+      let foundWords = [];
+      
+      if (badWords.some(word => {
+          if (story.toLowerCase().includes(word)) {
+            foundWords.push(word); // Shyiramo ijambo ryabonetse
+            return true;
+          }
+          return false;
+        })) {
+        reason = "Inkuru irimo amagambo mabi, mabi, mabi cyane yakwagiza umuco w'abasomyi, amagambo yagaragaye: " + foundWords.join(", "); // Kwerekana amagambo yabonetse
+      } else if (!author) {
+        reason = "Inkuru nta mwanditsi ifite.";
+      }
+      
+      if (reason) {
+        try {
+          // Hindura 'blocked' ku 'true' kugirango inkuru itabasha gusomwa
+          await updateDoc(docRef, { blocked: true });
+          blockedStories.push({ id: docSnap.id, head, story, author, reason, blocked: true });
+        } catch (error) {
+          console.error("Ikosa mu guhindura document:", error);
+        }
+      }
+    }
+    
+    // Garagaza inkuru zabujijwe
+    if (blockedStories.length > 0) {
+      displayBlockedStories(blockedStories);
+      status.innerText = `✅ Inkuru ${blockedStories.length} zabujijwe!`;
+    } else {
+      status.innerText = "✔️ Nta nkuru yabujijwe.";
+    }
+  } catch (error) {
+    console.error("Ikosa:", error);
+    status.innerText = "❌ Habaye ikibazo mu gusuzuma inkuru.";
+  }
+}
+  
+  function displayBlockedStories(blockedStories) {
+    const container = document.getElementById("blockedStories");
+    container.innerHTML = "";
+    
+    blockedStories.forEach(story => {
+      const div = document.createElement("div");
+      div.classList.add("blocked-story");
+      div.innerHTML = `
+          <h3>${story.head || "Inkuru itagira title"}</h3>
+          <p><strong>Umwanditsi:</strong> ${story.author || "Umwanditsi utazwi"}</p>
+          <p class="story-content">${story.blocked ? "🔒 Iyi nkuru irasibwa nyuma y'amasaha 24 niramuka idakosowe" : story.story.slice(0, 500) + "..."}</p>
+          <p><strong>Impamvu:</strong> ${story.reason}</p>
+          <div class="buttons">
+          
+            <button class="btn delete-btn" onclick="window.deleteStory('${story.id}')">Delete</button>
+          </div>
+        `;
+      container.appendChild(div);
+    });
+  }
+  
+  
+  
+  async function deleteStory(storyId) {
+    const docRef = doc(db, "posts", storyId);
+    if (confirm("Urashaka gusiba iyi nkuru burundu?")) {
+      try {
+        await deleteDoc(docRef);
+        checkAndFilterStories();
+      } catch (error) {
+        console.error("Ikosa:", error);
+      }
+    }
+  }
+  
+  
+  window.deleteStory = deleteStory;
+  
+  checkAndFilterStories().then(() => console.log("✔️ Process irarangiye."));
+</script>
+
+</body>
+</html>
