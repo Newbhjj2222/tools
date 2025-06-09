@@ -1,0 +1,117 @@
+<!DOCTYPE html>
+<html lang="rw">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Inyandiko Form</title>
+  <link rel="stylesheet" href="form.css" />
+</head>
+<body>
+  <div class="form-container">
+    <h2>Tegura Inyandiko</h2>
+    <form class="post-form">
+      <label for="title">Umutwe w’inkuru:</label>
+      <input type="text" id="title" name="title" placeholder="Andika umutwe w'inkuru..." required />
+
+      <label for="description">Ibisobanuro:</label>
+      <textarea id="description" name="description" rows="6" placeholder="Andika inkuru cyangwa igitekerezo..." required></textarea>
+
+      <label for="image">Ifoto (optional):</label>
+      <input type="file" id="image" name="image" accept="image/*" />
+
+      <button type="submit">Ohereza</button>
+    </form>
+  </div>
+
+  <script type="module">
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/10.14.1/firebase-app.js";
+    import { getFirestore, collection, addDoc, Timestamp } from "https://www.gstatic.com/firebasejs/10.14.1/firebase-firestore.js";
+
+    const firebaseConfig = {
+      apiKey: "AIzaSy...", // ← Shyiramo API key yawe
+      authDomain: "newtalents-a7c29.firebaseapp.com",
+      projectId: "newtalents-a7c29",
+      storageBucket: "newtalents-a7c29.appspot.com",
+      messagingSenderId: "507408992610",
+      appId: "1:507408992610:web:05ce220a4cb4922de9843b"
+    };
+
+    const app = initializeApp(firebaseConfig);
+    const db = getFirestore(app);
+    const form = document.querySelector('.post-form');
+
+    // Fungura image, uyigabanye ukoresheje canvas, hanyuma uyihindure base64
+    function resizeImage(file, maxWidth = 800, maxHeight = 800) {
+      return new Promise((resolve, reject) => {
+        const reader = new FileReader();
+
+        reader.onload = function (event) {
+          const img = new Image();
+          img.onload = function () {
+            let width = img.width;
+            let height = img.height;
+
+            // Gabanya ubunini
+            if (width > maxWidth || height > maxHeight) {
+              const aspectRatio = width / height;
+              if (width > height) {
+                width = maxWidth;
+                height = Math.round(maxWidth / aspectRatio);
+              } else {
+                height = maxHeight;
+                width = Math.round(maxHeight * aspectRatio);
+              }
+            }
+
+            const canvas = document.createElement('canvas');
+            canvas.width = width;
+            canvas.height = height;
+            const ctx = canvas.getContext('2d');
+            ctx.drawImage(img, 0, 0, width, height);
+
+            const resizedBase64 = canvas.toDataURL('image/jpeg', 0.8); // compression quality 0.8
+            resolve(resizedBase64);
+          };
+
+          img.onerror = error => reject(error);
+          img.src = event.target.result;
+        };
+
+        reader.onerror = error => reject(error);
+        reader.readAsDataURL(file);
+      });
+    }
+
+    // Form submit logic
+    form.addEventListener('submit', async (e) => {
+      e.preventDefault();
+
+      const title = document.getElementById('title').value.trim();
+      const description = document.getElementById('description').value.trim();
+      const imageFile = document.getElementById('image').files[0];
+
+      let imageBase64 = "";
+
+      try {
+        if (imageFile) {
+          imageBase64 = await resizeImage(imageFile);
+        }
+
+        await addDoc(collection(db, "pop"), {
+          title,
+          description,
+          imageBase64,
+          createdAt: Timestamp.fromDate(new Date())
+        });
+
+        alert("Inyandiko ibitswe neza!");
+        form.reset();
+
+      } catch (error) {
+        console.error("Ikibazo mu kubika inyandiko:", error);
+        alert("Habaye ikibazo mu kubika inyandiko.");
+      }
+    });
+  </script>
+</body>
+</html>
