@@ -180,8 +180,8 @@ async function loadDocument() {
             const data = docSnap.data();
             
             // Kwandika amakuru mu bice bya HTML
-            document.getElementById("username").textContent = data.username || "N/A";
-            document.getElementById("phone-number").textContent = data.phone_number || "N/A";
+            document.getElementById("username").textContent = data.names || "N/A";
+            document.getElementById("phone-number").textContent = data.phone || "N/A";
             document.getElementById("momo-name").textContent = data.momo_name || "N/A";
             document.getElementById("plan").textContent = data.plan || "N/A";
             document.getElementById("nes").textContent = data.nes || "N/A";
