@@ -1,0 +1,81 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <link rel="stylesheet" href="style.css" type="text/css" media="all" />
+  <title>Author Badge</title>
+</head>
+
+<body>
+  <div class="man">
+    <form class="get" id="teamForm">
+      <input type="text" name="name" id="name" placeholder="Author name..." required />
+      <input type="tel" name="tel" id="tel" placeholder="Phone number..." required />
+      <input type="file" name="image" id="image" accept="image/*" required />
+      <button type="submit">Submit</button>
+    </form>
+  </div>
+  
+  <script type="module">
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/10.14.1/firebase-app.js";
+    import { getFirestore, collection, addDoc } from "https://www.gstatic.com/firebasejs/10.14.1/firebase-firestore.js";
+    
+    const firebaseConfig = {
+      apiKey: "AIzaSy...",
+      authDomain: "newtalents-a7c29.firebaseapp.com",
+      projectId: "newtalents-a7c29",
+      storageBucket: "newtalents-a7c29.appspot.com",
+      messagingSenderId: "507408992610",
+      appId: "1:507408992610:web:05ce220a4cb4922de9843b"
+    };
+    
+    const app = initializeApp(firebaseConfig);
+    const db = getFirestore(app);
+    
+    const teamForm = document.getElementById("teamForm");
+    
+    teamForm.addEventListener("submit", async (e) => {
+      e.preventDefault();
+      
+      const name = document.getElementById("name").value.trim();
+      const tel = document.getElementById("tel").value.trim();
+      const file = document.getElementById("image").files[0];
+      
+      if (!name || !tel || !file) {
+        alert("Please fill all fields");
+        return;
+      }
+      
+      try {
+        // 🔹 Convert image to Base64
+        const reader = new FileReader();
+        reader.readAsDataURL(file);
+        reader.onload = async () => {
+          const base64Image = reader.result; // "data:image/png;base64,...."
+          
+          // 🔹 Save to Firestore
+          await addDoc(collection(db, "Team"), {
+            name: name,
+            whatsapp: tel,
+            photo: base64Image,
+            createdAt: new Date()
+          });
+          
+          alert("Team member saved successfully ✅");
+          teamForm.reset();
+        };
+        reader.onerror = (error) => {
+          console.error("Error reading file:", error);
+          alert("Error converting image ❌");
+        };
+      } catch (error) {
+        console.error("Error saving team member:", error);
+        alert("Error saving team member ❌");
+      }
+    });
+  </script>
+</body>
+
+</html>
