@@ -1,0 +1,174 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Team Members Manager</title>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      background: linear-gradient(135deg, #f0f4f8, #dfe9f3);
+      padding: 0px;
+      margin: 0;
+    }
+
+    h2 {
+      text-align: center;
+      margin-bottom: 20px;
+      color: #2c3e50;
+    }
+
+    .table-wrapper {
+      overflow-x: auto;
+    }
+
+    table {
+width: 95%;
+margin: 5px;
+border-collapse: collapse;
+background: #fff;
+border-radius: 10px;
+overflow: hidden;
+box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+}
+
+th, td {
+padding: 14px;
+text-align: left;
+border-bottom: 1px solid #eee;
+}
+
+th {
+background: #2c3e50;
+color: white;
+font-size: 10px;
+text-transform: uppercase;
+}
+
+td:first-child {
+color: red;
+font-weight: bold;
+
+}
+
+td:nth-child(2) {
+color: green;
+font-weight: bold;
+font-size: 8px;
+}
+
+    td img {
+      width: 40px;
+      height: 40px;
+      border-radius: 50%;
+      object-fit: cover;
+      display: block;
+    }
+
+    a {
+      color: #25D366;
+      text-decoration: none;
+    }
+
+    a:hover {
+      text-decoration: underline;
+    }
+
+    button {
+      padding: 6px 12px;
+      border: none;
+      border-radius: 4px;
+      background: #e74c3c;
+      color: white;
+      cursor: pointer;
+      transition: 0.3s;
+    }
+
+    button:hover {
+      background: #c0392b;
+    }
+
+    .center-text {
+      text-align: center;
+      color: #555;
+      margin-top: 20px;
+    }
+
+
+
+   
+  </style>
+</head>
+<body>
+
+  <h2>Team Members Manager</h2>
+
+  <div class="table-wrapper">
+    <table id="TeamTable">
+      <thead>
+        <tr>
+          <th>Photo</th>
+          <th>Name</th>
+          <th>Whatsapp</th>
+          <th>Action</th>
+        </tr>
+      </thead>
+      <tbody id="TeamsBody">
+        <!-- Team members zizana hano na JavaScript -->
+      </tbody>
+    </table>
+  </div>
+
+  <script type="module">
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/10.14.1/firebase-app.js";
+    import { getFirestore, collection, getDocs, deleteDoc, doc } from "https://www.gstatic.com/firebasejs/10.14.1/firebase-firestore.js";
+
+    const firebaseConfig = {
+        apiKey: "AIzaSy...",
+        authDomain: "newtalents-a7c29.firebaseapp.com",
+        projectId: "newtalents-a7c29",
+        storageBucket: "newtalents-a7c29.appspot.com",
+        messagingSenderId: "507408992610",
+        appId: "1:507408992610:web:05ce220a4cb4922de9843b"
+    };
+
+    const app = initializeApp(firebaseConfig);
+    const db = getFirestore(app);
+
+    async function loadTeams() {
+      const tableBody = document.getElementById("TeamsBody");
+      tableBody.innerHTML = "";
+
+      const querySnapshot = await getDocs(collection(db, "Team"));
+      if(querySnapshot.empty){
+        const row = document.createElement("tr");
+        row.innerHTML = `<td colspan="4" style="text-align:center;color:#555;">No Team member</td>`;
+        tableBody.appendChild(row);
+        return;
+      }
+
+      querySnapshot.forEach((docSnap) => {
+        const Team = docSnap.data();
+        const row = document.createElement("tr");
+
+        row.innerHTML = `
+          <td><img src="${Team.photo}" alt="${Team.name}" /></td>
+          <td>${Team.name}</td>
+          <td><a href="https://wa.me/${Team.whatsapp.replace(/\D/g,'')}" target="_blank">${Team.whatsapp}</a></td>
+          <td><button data-id="${docSnap.id}">Delete</button></td>
+        `;
+
+        row.querySelector("button").addEventListener("click", async (e) => {
+          const id = e.target.getAttribute("data-id");
+          await deleteDoc(doc(db, "Team", id));
+          loadTeams();
+        });
+
+        tableBody.appendChild(row);
+      });
+    }
+
+    loadTeams();
+  </script>
+</body>
+</html>
