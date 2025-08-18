@@ -1,0 +1,35 @@
+body{
+  margin: 0;
+  padding: 0;
+  font-family: Arial, sans-serif;
+}
+.get{
+  margin: 50% auto;
+  display: flex;
+  width: 80%;
+  flex-direction: column;
+  padding: 10px;
+  border: 1px solid darkgrey;
+  border-radius: 12px;
+  background: #BDBDBD;
+}
+input{
+  padding: 10px;
+  border-radius: 8px;
+  width: 80%;
+  margin: 12px;
+  border: 1px solid lightcyan;
+}
+button{
+  margin-left: 100px;
+  width: 80px;
+  padding: 8px;
+  border-radius: 12px;
+  border: none;
+  background: green;
+  color: white;
+}
+button:hover{
+  background: white;
+  color: black;
+}
