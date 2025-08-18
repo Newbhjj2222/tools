@@ -1,0 +1,131 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Bible Verses</title>
+</head>
+<body>
+  <style>
+body {
+  font-family: Arial, sans-serif;
+  background: linear-gradient(135deg, #f0f4f8, #dfe9f3);
+  padding: 20px;
+}
+
+h2 {
+  text-align: center;
+  margin-bottom: 20px;
+  color: #2c3e50;
+}
+
+table {
+  width: 100%;
+  border-collapse: collapse;
+  background: #fff;
+  border-radius: 10px;
+  overflow: hidden;
+  box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+}
+
+th, td {
+  padding: 14px;
+  text-align: left;
+  border-bottom: 1px solid #eee;
+}
+
+th {
+  background: #2c3e50;
+  color: white;
+  font-size: 16px;
+  text-transform: uppercase;
+}
+
+td:first-child {
+  color: red;
+  font-weight: bold;
+}
+
+td:nth-child(2) {
+  color: green;
+  font-weight: bold;
+}
+
+button {
+  padding: 6px 12px;
+  border: none;
+  border-radius: 4px;
+  background: #e74c3c;
+  color: white;
+  cursor: pointer;
+  transition: 0.3s;
+}
+
+button:hover {
+  background: #c0392b;
+}
+  </style>
+
+  <h2>📖 Bible Verses</h2>
+
+  <table id="bibleTable">
+    <thead>
+      <tr>
+        <th>Verse</th>
+        <th>Text</th>
+        <th>Action</th>
+      </tr>
+    </thead>
+    <tbody id="versesBody">
+      <!-- Verses zizana hano na JavaScript -->
+    </tbody>
+  </table>
+
+   <script type="module">
+  import { initializeApp } from "https://www.gstatic.com/firebasejs/10.14.1/firebase-app.js";
+  import { getFirestore, collection, getDocs, deleteDoc, doc } from "https://www.gstatic.com/firebasejs/10.14.1/firebase-firestore.js";
+
+  const firebaseConfig = {
+      apiKey: "AIzaSy...",
+      authDomain: "newtalents-a7c29.firebaseapp.com",
+      projectId: "newtalents-a7c29",
+      storageBucket: "newtalents-a7c29.appspot.com",
+      messagingSenderId: "507408992610",
+      appId: "1:507408992610:web:05ce220a4cb4922de9843b"
+  };
+
+  const app = initializeApp(firebaseConfig);
+  const db = getFirestore(app);
+
+  // Function yo kuzana verses muri table "bible"
+  async function loadVerses() {
+    const tableBody = document.getElementById("versesBody");
+    tableBody.innerHTML = "";
+
+    const querySnapshot = await getDocs(collection(db, "bible"));
+    querySnapshot.forEach((docSnap) => {
+      const verse = docSnap.data();
+      const row = document.createElement("tr");
+
+      row.innerHTML = `
+        <td>${verse.verse}</td>
+        <td>${verse.text}</td>
+        <td><button data-id="${docSnap.id}">Delete</button></td>
+      `;
+
+      // Event listener yo gusiba
+      row.querySelector("button").addEventListener("click", async (e) => {
+        const id = e.target.getAttribute("data-id");
+        await deleteDoc(doc(db, "bible", id));
+        loadVerses(); // refresh nyuma yo gusiba
+      });
+
+      tableBody.appendChild(row);
+    });
+  }
+
+  // Load verses ku ntangiriro
+  loadVerses();
+  </script>
+</body>
+</html>
