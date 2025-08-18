@@ -1,0 +1,134 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Send Bible Verse</title>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      background: #f3f4f6;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      min-height: 100vh;
+    }
+
+    .container {
+      background: white;
+      padding: 30px;
+      border-radius: 12px;
+      box-shadow: 0 5px 15px rgba(0,0,0,0.1);
+      max-width: 500px;
+      width: 100%;
+    }
+
+    h1 {
+      text-align: center;
+      color: #4b0082;
+    }
+
+    form {
+      display: flex;
+      flex-direction: column;
+      gap: 15px;
+    }
+
+    input, textarea {
+      padding: 10px;
+      border-radius: 6px;
+      border: 1px solid #ccc;
+      font-size: 16px;
+      width: 100%;
+    }
+
+    button {
+      background-color: #4b0082;
+      color: white;
+      border: none;
+      padding: 10px;
+      border-radius: 6px;
+      cursor: pointer;
+      font-size: 16px;
+    }
+
+    button:hover {
+      background-color: #6a0dad;
+    }
+
+    #status {
+      margin-top: 15px;
+      text-align: center;
+      color: green;
+    }
+  </style>
+
+  <!-- Firebase SDK -->
+<script type="module">
+  import { initializeApp } from "https://www.gstatic.com/firebasejs/10.14.1/firebase-app.js";
+  import { getAuth } from "https://www.gstatic.com/firebasejs/10.14.1/firebase-auth.js";
+  import { getFirestore, collection, getDocs,addDoc,query, orderBy } from "https://www.gstatic.com/firebasejs/10.14.1/firebase-firestore.js";
+  import { getStorage, ref, getDownloadURL } from "https://www.gstatic.com/firebasejs/10.14.1/firebase-storage.js";
+
+  const firebaseConfig = {
+      apiKey: "AIzaSy...",
+      authDomain: "newtalents-a7c29.firebaseapp.com",
+      projectId: "newtalents-a7c29",
+      storageBucket: "newtalents-a7c29.appspot.com",
+      messagingSenderId: "507408992610",
+      appId: "1:507408992610:web:05ce220a4cb4922de9843b"
+  };
+
+  const app = initializeApp(firebaseConfig);
+  const db = getFirestore(app);
+  const storage = getStorage(app);
+ 
+    window.addEventListener("DOMContentLoaded", () => {
+      const form = document.getElementById("verseForm");
+      const status = document.getElementById("status");
+
+      form.addEventListener("submit", async (e) => {
+        e.preventDefault();
+
+        const verseRef = document.getElementById("verseRef").value.trim();
+        const verseText = document.getElementById("verseText").value.trim();
+
+        if (!verseRef || !verseText) return;
+
+        try {
+          await addDoc(collection(db, "bible"), {
+            verse: verseRef,
+            text: verseText,
+            createdAt: new Date().toISOString()
+          });
+
+          status.textContent = "Verse yoherejwe neza!";
+          status.style.color = "green";
+          form.reset();
+        } catch (error) {
+          console.error("Error sending verse: ", error);
+          status.textContent = "Hari ikibazo cyo kohereza verse.";
+          status.style.color = "red";
+        }
+      });
+    });
+  </script>
+</head>
+<body>
+  <div class="container">
+    <h1>Send Bible Verse</h1>
+
+    <form id="verseForm">
+      <label for="verseRef">Verse Reference</label>
+      <input type="text" id="verseRef" placeholder="Ex: Zaburi 29:2" required>
+
+      <label for="verseText">Verse Text</label>
+      <textarea id="verseText" placeholder="Mwubahe Uwiteka..." required></textarea>
+
+      <button type="submit">Send Verse</button>
+    </form>
+
+    <p id="status"></p>
+  </div>
+</body>
+</html>
