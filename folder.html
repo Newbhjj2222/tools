@@ -1,0 +1,190 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Folders Manager</title>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      background: linear-gradient(135deg, #f0f4f8, #dfe9f3);
+      padding: 0;
+      margin: 0;
+    }
+    h2 {
+      text-align: center;
+      margin-bottom: 20px;
+      color: #2c3e50;
+    }
+    .table-wrapper {
+      overflow-x: auto;
+    }
+    table {
+      width: 95%;
+      margin: 10px auto;
+      border-collapse: collapse;
+      background: #fff;
+      border-radius: 10px;
+      overflow: hidden;
+      box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+    }
+    th, td {
+      padding: 12px;
+      text-align: left;
+      border-bottom: 1px solid #eee;
+    }
+    th {
+      background: #2c3e50;
+      color: white;
+      font-size: 12px;
+      text-transform: uppercase;
+    }
+    tr.hidden-row {
+      background-color: #f9d6d5;
+      opacity: 0.6;
+    }
+    button {
+      padding: 6px 12px;
+      border: none;
+      border-radius: 4px;
+      color: white;
+      cursor: pointer;
+      transition: 0.3s;
+    }
+    .edit-btn {
+      background: #3498db;
+      margin-right: 5px;
+    }
+    .edit-btn:hover {
+      background: #2980b9;
+    }
+    .delete-btn {
+      background: #e74c3c;
+      margin-right: 5px;
+    }
+    .delete-btn:hover {
+      background: #c0392b;
+    }
+    .hide-btn {
+      background: #f1c40f;
+      color: #2c3e50;
+    }
+    .hide-btn:hover {
+      background: #d4ac0d;
+    }
+  </style>
+</head>
+<body>
+
+  <h2>Folders Manager</h2>
+
+  <div class="table-wrapper">
+    <table id="FolderTable">
+      <thead>
+        <tr>
+          <th>Title</th>
+          <th>Author</th>
+          <th>Status</th>
+          <th>Action</th>
+        </tr>
+      </thead>
+      <tbody id="FoldersBody">
+        <!-- Folders zizana hano -->
+      </tbody>
+    </table>
+  </div>
+
+  <script type="module">
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/10.14.1/firebase-app.js";
+    import { 
+      getFirestore, 
+      collection, 
+      getDocs, 
+      deleteDoc, 
+      doc, 
+      updateDoc 
+    } from "https://www.gstatic.com/firebasejs/10.14.1/firebase-firestore.js";
+
+    // 🔹 Firebase config yawe
+    const firebaseConfig = {
+      apiKey: "AIzaSy...",
+      authDomain: "newtalents-a7c29.firebaseapp.com",
+      projectId: "newtalents-a7c29",
+      storageBucket: "newtalents-a7c29.appspot.com",
+      messagingSenderId: "507408992610",
+      appId: "1:507408992610:web:05ce220a4cb4922de9843b"
+    };
+
+    const app = initializeApp(firebaseConfig);
+    const db = getFirestore(app);
+
+    async function loadFolders() {
+      const tableBody = document.getElementById("FoldersBody");
+      tableBody.innerHTML = "";
+
+      const querySnapshot = await getDocs(collection(db, "folders"));
+      if (querySnapshot.empty) {
+        const row = document.createElement("tr");
+        row.innerHTML = `<td colspan="4" style="text-align:center;color:#555;">No folders found</td>`;
+        tableBody.appendChild(row);
+        return;
+      }
+
+      querySnapshot.forEach((docSnap) => {
+        const Folder = docSnap.data();
+        const id = docSnap.id;
+        const hidden = Folder.hidden === true;
+
+        const row = document.createElement("tr");
+        if (hidden) row.classList.add("hidden-row");
+
+        row.innerHTML = `
+          <td>${Folder.title || '(No Title)'}</td>
+          <td>${Folder.author || '(No Author)'}</td>
+          <td>${hidden ? 'Hidden' : 'Visible'}</td>
+          <td>
+            <button class="edit-btn" data-id="${id}">Edit</button>
+            <button class="hide-btn" data-id="${id}">${hidden ? 'Show' : 'Hide'}</button>
+            <button class="delete-btn" data-id="${id}">Delete</button>
+          </td>
+        `;
+
+        // 🟦 EDIT button
+        row.querySelector(".edit-btn").addEventListener("click", async (e) => {
+          const newTitle = prompt("Enter new title:", Folder.title || "");
+          if (newTitle === null) return;
+
+          const newAuthor = prompt("Enter new author:", Folder.author || "");
+          if (newAuthor === null) return;
+
+          const folderRef = doc(db, "folders", id);
+          await updateDoc(folderRef, {
+            title: newTitle,
+            author: newAuthor
+          });
+          loadFolders();
+        });
+
+        // 🟨 HIDE/SHOW button
+        row.querySelector(".hide-btn").addEventListener("click", async (e) => {
+          const folderRef = doc(db, "folders", id);
+          await updateDoc(folderRef, { hidden: !hidden });
+          loadFolders();
+        });
+
+        // 🟥 DELETE button
+        row.querySelector(".delete-btn").addEventListener("click", async (e) => {
+          const confirmDelete = confirm("Are you sure you want to delete this folder?");
+          if (!confirmDelete) return;
+          await deleteDoc(doc(db, "folders", id));
+          loadFolders();
+        });
+
+        tableBody.appendChild(row);
+      });
+    }
+
+    loadFolders();
+  </script>
+</body>
+</html>
