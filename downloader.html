@@ -1,0 +1,324 @@
+
+<!doctype html>
+<html lang="rw">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>NeT Downloader</title>
+  <style>
+    /* Styles remain unchanged */
+  </style>
+</head>
+<body>
+  <style>
+    :root{
+      --bg:#0f1724; --card:#0b1220; --muted:#9aa4b2; --accent:#60a5fa;
+      --glass: rgba(255,255,255,0.03);
+    }
+    *{box-sizing:border-box}
+    body{
+      margin:0;
+      font-family:Inter,system-ui,Segoe UI,Roboto,"Helvetica Neue",Arial;
+      background:linear-gradient(180deg,#071028 0%, #0b1220 100%);
+      color:#e6eef8;
+      min-height:100vh;
+      display:flex;
+      align-items:center;
+      justify-content:center;
+      padding:32px;
+    }
+    .card{
+      width:100%;
+      max-width:880px;
+      background:linear-gradient(180deg, rgba(255,255,255,0.02), rgba(255,255,255,0.01));
+      border-radius:12px;
+      padding:20px;
+      box-shadow: 0 6px 30px rgba(3,8,23,0.7);
+      border:1px solid rgba(255,255,255,0.03);
+      backdrop-filter: blur(6px);
+    }
+    h1{
+      margin:0 0 8px;
+      font-size:20px
+      text-arign: center;
+    }
+    p.lead{margin:0 0 18px;color:var(--muted);font-size:13px}
+    .row{display:flex;gap:12px;flex-wrap:wrap}
+    input[type="url"]{
+      flex:1;
+      min-width:0;
+      padding:12px 14px;
+      border-radius:8px;
+      border:1px solid rgba(255,255,255,0.04);
+      background:var(--glass);
+      color:inherit;
+      outline:none;
+      font-size:14px;
+    }
+    button{
+      background:var(--accent);
+      border:none;
+      color:#03204a;
+      padding:10px 14px;
+      border-radius:8px;
+      cursor:pointer;
+      font-weight:600;
+      box-shadow: 0 6px 18px rgba(96,165,250,0.12);
+    }
+    button.ghost{
+      background:transparent;
+      color:var(--muted);
+      border:1px dashed rgba(255,255,255,0.03);
+      box-shadow:none;
+    }
+    .meta{
+      margin-top:16px;
+      padding:12px;
+      background:rgba(255,255,255,0.015);
+      border-radius:8px;
+      font-size:13px;
+      color:var(--muted);
+    }
+    .meta b{color:#e6eef8}
+    audio{width:100%; margin-top:12px; outline:none}
+    .progress{
+      height:10px; background:rgba(255,255,255,0.03); border-radius:999px; margin-top:10px; overflow:hidden;
+    }
+    .progress > i{display:block;height:100%; width:0%; background:linear-gradient(90deg,#60a5fa,#34d399)}
+    .note{margin-top:12px;font-size:12px;color:#ffefc3;background:#3b2c00;padding:10px;border-radius:8px}
+    .warning{margin-top:12px;font-size:13px;color:#ffd1d1;background:#3b0000;padding:10px;border-radius:8px}
+    .row-actions{display:flex;gap:8px;margin-top:12px;flex-wrap:wrap}
+    code{background:rgba(255,255,255,0.03);padding:2px 6px;border-radius:6px;font-size:12px;color:var(--muted)}
+    footer{margin-top:14px;font-size:12px;color:var(--muted)}
+  </style>
+  <main class="card" role="main" aria-labelledby="title">
+    <h1 id="title">NeT Downloader</h1>
+    <p class="lead">Andika cyangwa shyiramo <b>direct audio URL</b> (mp3/wav/ogg) cyangwa <b>URL y'urupapuro</b>. Iyi page izagerageza gukina audio no kuyigura (download) mu buryo bwemewe.</p>
+
+    <div class="row">
+      <input id="urlInput" type="url" placeholder="Paste direct audio URL or webpage URL" aria-label="Audio URL" />
+      <button id="checkBtn">Check & Load</button>
+<button id="fetchDownloadBtn" class="ghost" title="Fetch then download via blob">Fetch & Download</button>
+      <button id="openTabBtn" class="ghost" title="Open raw URL in new tab (fallback)">Open URL</button>
+    </div>
+
+    <div id="meta" class="meta" aria-live="polite" hidden>
+      <div><b>URL:</b> <span id="metaUrl"></span></div>
+      <div><b>Content-Type:</b> <span id="metaType"></span></div>
+      <div><b>Detected filename:</b> <span id="metaName"></span></div>
+      <div><b>Size:</b> <span id="metaSize"></span></div>
+      <div id="corsInfo"><b>CORS:</b> <span id="metaCORS"></span></div>
+    </div>
+
+    <audio id="player" controls hidden></audio>
+
+    <div class="progress" hidden aria-hidden="true"><i id="progressBar"></i></div>
+
+    <div class="row-actions">
+      <a id="directDownloadAnchor" href="#" download="" hidden><button id="directDownloadBtn">Direct Download (is allowed)</button></a>
+      <a id="blobDownloadAnchor" href="#" download="" hidden><button id="blobDownloadBtn">Download (via fetched blob)</button></a>
+    </div>
+
+    <div id="notes" class="note" hidden>
+      <strong>Note:</strong> Niba server ifite CORS disabled, browser izahagarika fetch; muri ubwo buryo kanda <em>Open URL</em> kugirango ugerageze gufungura iyo file mu tab nshya.
+    </div>
+
+    <div id="warning" class="warning">
+      <strong>Important:</strong> Ntukoreshe iyi tool mu gukuramo ama-audio utabifitiye uburenganzira.
+    </div>
+
+    <footer>Ikitonderwa: Iyi page n'izagufasha gusa<code>ku downloadinga audio ukoresheje URLs</code> kandi ntigomba gukoreshwa ngo ihungabanye amategeko. niya New talents stories group,  all right resersed</footer>
+  </main>
+
+<script>
+(function(){
+  const urlInput = document.getElementById('urlInput');
+  const checkBtn = document.getElementById('checkBtn');
+  const fetchDownloadBtn = document.getElementById('fetchDownloadBtn');
+  const openTabBtn = document.getElementById('openTabBtn');
+
+  const meta = document.getElementById('meta');
+  const metaUrl = document.getElementById('metaUrl');
+  const metaType = document.getElementById('metaType');
+  const metaName = document.getElementById('metaName');
+  const metaSize = document.getElementById('metaSize');
+  const metaCORS = document.getElementById('metaCORS');
+  const corsInfo = document.getElementById('corsInfo');
+
+  const player = document.getElementById('player');
+  const progress = document.querySelector('.progress');
+  const progressBar = document.getElementById('progressBar');
+
+  const directDownloadAnchor = document.getElementById('directDownloadAnchor');
+  const directDownloadBtn = document.getElementById('directDownloadBtn');
+  const blobDownloadAnchor = document.getElementById('blobDownloadAnchor');
+  const blobDownloadBtn = document.getElementById('blobDownloadBtn');
+  const notes = document.getElementById('notes');
+
+  function resetUI(){
+    meta.hidden = true;
+    player.hidden = true;
+    progress.hidden = true;
+    progressBar.style.width = '0%';
+    directDownloadAnchor.hidden = true;
+    blobDownloadAnchor.hidden = true;
+    notes.hidden = true;
+    metaUrl.textContent = metaType.textContent = metaName.textContent = metaSize.textContent = metaCORS.textContent = '';
+  }
+
+  function extractFilenameFromUrl(url){
+    try{
+      const u = new URL(url);
+      const path = u.pathname;
+      const name = path.split('/').filter(Boolean).pop() || 'audio';
+      return decodeURIComponent(name);
+    }catch(e){
+      return 'audio';
+    }
+  }
+
+  async function checkUrl(url){
+    resetUI();
+    if(!url) return alert('Shyiramo URL mbere.');
+    meta.hidden = false;
+    metaUrl.textContent = url;
+
+    // Try to fetch the URL
+    try {
+      const response = await fetch(url, { mode: 'cors' });
+      if (!response.ok) throw new Error('Failed to fetch the page');
+
+      const text = await response.text();
+      const audioUrls = extractAudioUrlsFromHtml(text);
+      if (audioUrls.length > 0) {
+        // If audio URLs are found, play the first one
+        player.src = audioUrls[0];
+        player.hidden = false;
+        player.load();
+        metaCORS.textContent = 'Audio found on page';
+        directDownloadAnchor.href = audioUrls[0];
+        directDownloadAnchor.download = extractFilenameFromUrl(audioUrls[0]);
+        directDownloadAnchor.hidden = false;
+      } else {
+        alert('Nta ma-audio yabonetse kuri iyi page.');
+      }
+    } catch (error) {
+      console.error(error);
+      alert('Ikosa ryabaye: ' + error.message);
+    }
+  }
+
+  function extractAudioUrlsFromHtml(html) {
+    const audioUrls = [];
+    const audioRegex = /<audio[^>]*src="([^"]+)"/g;
+    let match;
+    while ((match = audioRegex.exec(html)) !== null) {
+      audioUrls.push(match[1]);
+    }
+    return audioUrls;
+  }
+
+  async function fetchAndDownload(url){
+    resetUI();
+    if(!url) return alert('Shyiramo URL mbere.');
+    meta.hidden = false;
+    metaUrl.textContent = url;
+    progress.hidden = false;
+    progressBar.style.width = '0%';
+
+    try{
+      const resp = await fetch(url, { method:'GET', mode:'cors' });
+      if(!resp.ok) throw new Error('Network response not OK: ' + resp.status);
+      const contentType = resp.headers.get('content-type') || '';
+      const cl = resp.headers.get('content-length');
+      if(contentType) metaType.textContent = contentType;
+      if(cl) metaSize.textContent = (Math.round(Number(cl)/1024) + ' KB');
+
+      // If body is not readable stream (some browsers), fallback to blob()
+      if(!resp.body){
+        const blob = await resp.blob();
+        const name = extractFilenameFromUrl(url) || 'audio';
+        const blobUrl = URL.createObjectURL(blob);
+        blobDownloadAnchor.href = blobUrl;
+        blobDownloadAnchor.download = name;
+        blobDownloadAnchor.hidden = false;
+        blobDownloadBtn.focus();
+        player.src = blobUrl;
+        player.hidden = false;
+        return;
+      }
+
+      const reader = resp.body.getReader();
+      const contentLength = cl ? Number(cl) : null;
+      let received = 0;
+      const chunks = [];
+      while(true){
+        const {done, value} = await reader.read();
+        if(done) break;
+        chunks.push(value);
+        received += value.length;
+        if(contentLength){
+          const pct = Math.round((received / contentLength) * 100);
+          progressBar.style.width = pct + '%';
+        } else {
+          // animate progress when unknown size
+          const current = parseFloat(progressBar.style.width) || 0;
+          progressBar.style.width = Math.min(95, current + 6) + '%';
+        }
+      }
+      progressBar.style.width = '100%';
+      const blob = new Blob(chunks, { type: contentType || 'application/octet-stream' });
+      const name = extractFilenameFromUrl(url) || 'audio';
+      const blobUrl = URL.createObjectURL(blob);
+
+      // Setup anchor for user
+      blobDownloadAnchor.href = blobUrl;
+      blobDownloadAnchor.download = name;
+      blobDownloadAnchor.hidden = false;
+
+      // Also play it
+      player.src = blobUrl;
+      player.hidden = false;
+
+      // Revoke after some time when user navigates away (optional)
+      setTimeout(()=> URL.revokeObjectURL(blobUrl), 1000 * 60 * 5);
+
+    }catch(err){
+      console.error(err);
+      alert('Fetch failed: ' + (err.message || err));
+      notes.hidden = false;
+    }
+  }
+
+  checkBtn.addEventListener('click', async ()=>{
+    const url = urlInput.value.trim();
+    await checkUrl(url);
+  });
+
+  fetchDownloadBtn.addEventListener('click', async ()=>{
+    const url = urlInput.value.trim();
+    fetchAndDownload(url);
+  });
+
+  openTabBtn.addEventListener('click', ()=>{
+    const url = urlInput.value.trim();
+    if(!url) return alert('Shyiramo URL mbere.');
+    window.open(url, '_blank', 'noopener');
+  });
+
+  // Support Enter key on input
+  urlInput.addEventListener('keydown', (e)=>{
+    if(e.key === 'Enter'){
+      e.preventDefault();
+      checkBtn.click();
+    }
+  });
+
+  // Initialize with placeholder example
+  urlInput.value = '';
+  resetUI();
+
+})();
+</script>
+</body>
+</html>
